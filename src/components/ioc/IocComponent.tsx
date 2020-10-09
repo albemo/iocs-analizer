@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { Table, Form, Button } from 'react-bootstrap'
+import { Table, Form, Button, Modal } from 'react-bootstrap'
 import axios from 'axios'
 import ExportExcelComponent from '../export/ExportExcelComponent'
+import AlertDismissibleExample from '../AlertDismissibleExample'
 
 interface IiocItem {
   sha256: any,
@@ -14,13 +15,19 @@ interface IiocItem {
 function IocComponent() {
   const [iocs, setIocs] = useState<IiocItem[]>([])
   const [ioc, setIoc] = useState('')
+  const [alert, setAlert] = useState(false)
+  const [buttonDisabled, setButtonDisabled] = useState(false)
+  const [textareaDisabled, setTextareaDisabled] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
+  const [show, setShow] = useState(false);
+
 
   useEffect(() => {
     refresh()
   }, [])
 
 
-  function refresh() {
+  const refresh = () => {
     let iocItems: IiocItem[] = [];
     let iocss = localStorage.getItem('iocs')
     if (typeof iocss === 'string') {
@@ -28,17 +35,32 @@ function IocComponent() {
     }
     setIocs(iocItems)
   }
+  
+
+  const handleClose = () => setShow(false);
+  const handleShow = () => setShow(true);
+
+
+  const clearData = () => {
+    handleClose()
+    localStorage.clear()
+    refresh()
+  }
 
 
   const save = async (ioc: any) => {
+    setAlert(false)
+    setButtonDisabled(true)
+    setTextareaDisabled(true)
     try {
-      const fetchIoc = await axios(`https://www.virustotal.com/api/v3/files/${ioc}`, {
+      const proxyurl = "https://cors-anywhere.herokuapp.com/";
+      const fetchIoc = await axios(`${proxyurl}https://www.virustotal.com/api/v3/files/${ioc}`, {
         // headers: { 'x-apiKey': `${process.env.REACT_APP_API_KEY}` }
-        headers: {
-          'x-apiKey': '31f181995462bee2a105cdfe78e089d81677810ae7669941e438bcdbcea06fab',
-          "Access-Control-Allow-Origin": "*"
-        }
+        headers: { 'x-apiKey': `31f181995462bee2a105cdfe78e089d81677810ae7669941e438bcdbcea06fab` }
       })
+      // Success 🎉
+      console.log(fetchIoc);
+
       const item: IiocItem = {
         sha256: fetchIoc.data.data.attributes.sha256,
         sha_1: fetchIoc.data.data.attributes.sha1,
@@ -47,10 +69,34 @@ function IocComponent() {
         engines: `${fetchIoc.data.data.attributes.last_analysis_stats.malicious} / ${fetchIoc.data.data.attributes.last_analysis_stats.malicious + fetchIoc.data.data.attributes.last_analysis_stats.undetected} `
       }
       setLocalStorage(item)
-
     } catch (error) {
-      console.log(error.message)
+      // Error 😨
+      if (error.response) {
+        /*
+         * The request was made and the server responded with a
+         * status code that falls out of the range of 2xx
+         */
+        console.log('error.response.data', error.response.data);
+        console.log('error.response.status', error.response.status);
+        console.log('error.response.headers', error.response.headers);
+        setErrorMessage(error.response.data.error.message)
+        console.log(error.response.data.error.message)
+        setAlert(true)
+      } else if (error.request) {
+        /*
+         * The request was made but no response was received, `error.request`
+         * is an instance of XMLHttpRequest in the browser and an instance
+         * of http.ClientRequest in Node.js
+         */
+        console.log('error.request', error.request);
+      } else {
+        // Something happened in setting up the request and triggered an Error
+        console.log('error.message', error.message);
+      }
+      console.log('error', error);
     }
+    setButtonDisabled(false)
+    setTextareaDisabled(false)
   }
 
 
@@ -74,22 +120,46 @@ function IocComponent() {
     refresh()
   }
 
-
   return (
     <>
+      {/* Modal */}
+      <Modal show={show} onHide={handleClose}>
+        <Modal.Header closeButton>
+          <Modal.Title>Eliminar datos</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>Está seguro que desea eliminar los datos?</Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleClose}>
+            Cancelar
+          </Button>
+          <Button variant="primary" onClick={clearData}>
+            Continuar
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Form */}
       <Form className='container mt-5 mb-5'>
         <Form.Group controlId="exampleForm.ControlTextarea1">
-          <h4 className='text-center mb-3'>Ingresar indicadores de compromiso</h4>
+          <h2 className='text-center mb-5'>Ingresar indicadores de compromiso</h2>
           <Form.Label>Formatos aceptados: <small><b>SHA256, MD5 & SHA-1</b></small></Form.Label>
-          <Form.Control as="textarea" rows={3} value={ioc} onChange={e => setIoc(e.target.value)} />
+          <Form.Control style={{ fontSize: '30px' }} as="textarea" rows={2} value={ioc} size={'sm'} onChange={e => setIoc(e.target.value)} disabled={textareaDisabled} />
         </Form.Group>
         <div className='text-center'>
-          <Button variant="success" onClick={() => save(ioc)}>Consultar</Button>
+          {alert && <AlertDismissibleExample errorMessage={errorMessage} />}
+          <Button variant="success" onClick={() => save(ioc)} disabled={buttonDisabled || ioc === ''}>Consultar</Button>
         </div>
       </Form>
+
+      {/* Datatable */}
       <div className='container-fluid table-responsive' style={{ fontSize: '14px' }}>
-        <div className='text-center'>
-          <ExportExcelComponent iocs={iocs} />
+        <div className='mb-3 d-flex justify-content-end'>
+          <div>
+            <Button variant="danger" onClick={handleShow} disabled={iocs.length === 0} >Limpiar</Button>
+          </div>
+          <div className='ml-3' style={iocs.length === 0 ? { pointerEvents: "none", opacity: "0.4" } : {}}>
+            <ExportExcelComponent iocs={iocs} />
+          </div>
         </div>
         <Table striped bordered hover size="sm">
           <thead>

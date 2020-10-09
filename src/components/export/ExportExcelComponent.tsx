@@ -13,9 +13,11 @@ interface IiocItem {
 function ExportExcelComponent({ iocs }: { iocs: IiocItem[] }) {
   return (
     <>
+      <CSVLink style={{ textDecoration: 'none', color: '#fff' }} data={iocs}>
       <Button variant="success">
-        <CSVLink style={{ textDecoration: 'none', color: '#fff' }} data={iocs}>Descargar CSV</CSVLink>
+          Descargar CSV
       </Button>
+      </CSVLink>
     </>
   )
 }
