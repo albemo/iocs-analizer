@@ -141,7 +141,7 @@ function IocComponent() {
       {/* Form */}
       <Form className='container mt-5 mb-5'>
         <Form.Group controlId="exampleForm.ControlTextarea1">
-          <h2 className='text-center mb-5'>Ingresar indicadores de compromiso</h2>
+          <h2 className='text-center mb-5'>Ingresar Indicador de Compromiso</h2>
           <Form.Label>Formatos aceptados: <small><b>SHA256, MD5 & SHA-1</b></small></Form.Label>
           <Form.Control style={{ fontSize: '30px' }} as="textarea" rows={2} value={ioc} size={'sm'} onChange={e => setIoc(e.target.value)} disabled={textareaDisabled} />
         </Form.Group>
