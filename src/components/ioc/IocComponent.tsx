@@ -55,8 +55,7 @@ function IocComponent() {
     try {
       const proxyurl = "https://cors-anywhere.herokuapp.com/";
       const fetchIoc = await axios(`${proxyurl}https://www.virustotal.com/api/v3/files/${ioc}`, {
-        // headers: { 'x-apiKey': `${process.env.REACT_APP_API_KEY}` }
-        headers: { 'x-apiKey': `31f181995462bee2a105cdfe78e089d81677810ae7669941e438bcdbcea06fab` }
+        headers: { 'x-apiKey': `${process.env.REACT_APP_API_KEY}` }
       })
       // Success 🎉
       console.log(fetchIoc);
@@ -95,6 +94,7 @@ function IocComponent() {
       }
       console.log('error', error);
     }
+    setIoc('')
     setButtonDisabled(false)
     setTextareaDisabled(false)
   }
@@ -146,8 +146,8 @@ function IocComponent() {
           <Form.Control style={{ fontSize: '30px' }} as="textarea" rows={2} value={ioc} size={'sm'} onChange={e => setIoc(e.target.value)} disabled={textareaDisabled} />
         </Form.Group>
         <div className='text-center'>
+          <Button className='mb-3' variant="success" onClick={() => save(ioc)} disabled={buttonDisabled || ioc === ''}>Consultar</Button>
           {alert && <AlertDismissibleExample errorMessage={errorMessage} />}
-          <Button variant="success" onClick={() => save(ioc)} disabled={buttonDisabled || ioc === ''}>Consultar</Button>
         </div>
       </Form>
 
