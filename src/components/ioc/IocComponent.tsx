@@ -176,7 +176,7 @@ function IocComponent() {
             {
               iocs.map((el, i) =>
                 <tr key={i}>
-                  <td>{i}</td>
+                  <td>{i + 1}</td>
                   <td>{el.sha256}</td>
                   <td>{el.sha_1}</td>
                   <td>{el.md5}</td>
