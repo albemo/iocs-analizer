@@ -11,18 +11,6 @@ interface IiocItem {
 }
 
 function ExportExcelComponent({ iocs }: { iocs: IiocItem[] }) {
-  // const [iocs, setIocs] = useState<IiocItem[]>([])
-
-  // let iocItems: IiocItem[] = [];
-  // let iocss = localStorage.getItem('iocs')
-  // if (typeof iocss === 'string') {
-  //   iocItems = JSON.parse(iocss);
-  // }
-  // setIocs(iocItems)
-
-  // const csvData = iocs;
-
-
   return (
     <>
       <Button variant="success">

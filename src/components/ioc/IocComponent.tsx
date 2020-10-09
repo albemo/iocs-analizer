@@ -33,7 +33,8 @@ function IocComponent() {
   const save = async (ioc: any) => {
     try {
       const fetchIoc = await axios(`https://www.virustotal.com/api/v3/files/${ioc}`, {
-        headers: { 'x-apiKey': `${process.env.REACT_APP_API_KEY}` }
+        // headers: { 'x-apiKey': `${process.env.REACT_APP_API_KEY}` }
+        headers: { 'x-apiKey': '31f181995462bee2a105cdfe78e089d81677810ae7669941e438bcdbcea06fab' }
       })
       const item: IiocItem = {
         sha256: fetchIoc.data.data.attributes.sha256,
