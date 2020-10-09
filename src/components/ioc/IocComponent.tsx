@@ -152,8 +152,7 @@ function IocComponent() {
       </Form>
 
       {/* Datatable */}
-      <div className='container-fluid table-responsive' style={{ fontSize: '14px' }}>
-        <div className='mb-3 d-flex justify-content-end'>
+      <div className='mb-3 mr-3 d-flex justify-content-end'>
           <div>
             <Button variant="danger" onClick={handleShow} disabled={iocs.length === 0} >Limpiar</Button>
           </div>
@@ -161,6 +160,7 @@ function IocComponent() {
             <ExportExcelComponent iocs={iocs} />
           </div>
         </div>
+      <div className='container-fluid table-responsive' style={{ fontSize: '14px' }}>
         <Table striped bordered hover size="sm">
           <thead>
             <tr>
