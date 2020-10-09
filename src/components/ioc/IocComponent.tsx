@@ -35,7 +35,7 @@ function IocComponent() {
     }
     setIocs(iocItems)
   }
-  
+
 
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
@@ -153,13 +153,13 @@ function IocComponent() {
 
       {/* Datatable */}
       <div className='mb-3 mr-3 d-flex justify-content-end'>
-          <div>
-            <Button variant="danger" onClick={handleShow} disabled={iocs.length === 0} >Limpiar</Button>
-          </div>
-          <div className='ml-3' style={iocs.length === 0 ? { pointerEvents: "none", opacity: "0.4" } : {}}>
-            <ExportExcelComponent iocs={iocs} />
-          </div>
+        <div>
+          <Button variant="danger" onClick={handleShow} disabled={iocs.length === 0} >Limpiar</Button>
         </div>
+        <div className='ml-3' style={iocs.length === 0 ? { pointerEvents: "none", opacity: "0.4" } : {}}>
+          <ExportExcelComponent iocs={iocs} />
+        </div>
+      </div>
       <div className='container-fluid table-responsive' style={{ fontSize: '14px' }}>
         <Table striped bordered hover size="sm">
           <thead>
