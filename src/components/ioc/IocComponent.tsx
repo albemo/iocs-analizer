@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { Table, Form, Button, Modal } from 'react-bootstrap'
 import axios from 'axios'
-import ExportExcelComponent from '../export/ExportExcelComponent'
-import AlertDismissibleExample from '../AlertDismissibleExample'
+import ExportExcelComponent from '../excel/ExportExcelComponent'
+import UploadExcelComponent from '../excel/UploadExcelComponent'
 
 interface IiocItem {
   sha256: any,
-  sha_1: any,
+  sha1: any,
   md5: any,
   mcAfee: any,
   engines: any
@@ -15,11 +15,16 @@ interface IiocItem {
 function IocComponent() {
   const [iocs, setIocs] = useState<IiocItem[]>([])
   const [ioc, setIoc] = useState('')
-  const [alert, setAlert] = useState(false)
   const [buttonDisabled, setButtonDisabled] = useState(false)
   const [textareaDisabled, setTextareaDisabled] = useState(false)
-  const [errorMessage, setErrorMessage] = useState('')
   const [show, setShow] = useState(false);
+
+  // csv
+  const [iocsCsv, setIocsCsv] = useState([]);
+  // show component for only one IOC
+  const [showFormIoc, setShowFormIoc] = useState(true)
+  // show component for only CSV IOC
+  const [showFormCsvIoc, setShowFormCsvIoc] = useState(false)
 
 
   useEffect(() => {
@@ -48,13 +53,14 @@ function IocComponent() {
   }
 
 
-  const save = async (ioc: any) => {
-    setAlert(false)
+  const save = async (hash: string) => {
+    const isValidHash = validateHash(hash)
+    if (!isValidHash) return
     setButtonDisabled(true)
     setTextareaDisabled(true)
     try {
       const proxyurl = "https://cors-anywhere.herokuapp.com/";
-      const fetchIoc = await axios(`${proxyurl}https://www.virustotal.com/api/v3/files/${ioc}`, {
+      const fetchIoc = await axios(`${proxyurl}https://www.virustotal.com/api/v3/files/${hash}`, {
         headers: { 'x-apiKey': `${process.env.REACT_APP_API_KEY}` }
       })
       // Success 🎉
@@ -62,11 +68,12 @@ function IocComponent() {
 
       const item: IiocItem = {
         sha256: fetchIoc.data.data.attributes.sha256,
-        sha_1: fetchIoc.data.data.attributes.sha1,
+        sha1: fetchIoc.data.data.attributes.sha1,
         md5: fetchIoc.data.data.attributes.md5,
         mcAfee: fetchIoc.data.data.attributes.last_analysis_results.McAfee.result,
-        engines: `${fetchIoc.data.data.attributes.last_analysis_stats.malicious} / ${fetchIoc.data.data.attributes.last_analysis_stats.malicious + fetchIoc.data.data.attributes.last_analysis_stats.undetected} `
+        engines: `${fetchIoc.data.data.attributes.last_analysis_stats.malicious} / ${fetchIoc.data.data.attributes.last_analysis_stats.malicious + fetchIoc.data.data.attributes.last_analysis_stats.undetected}`
       }
+
       setLocalStorage(item)
     } catch (error) {
       // Error 😨
@@ -78,9 +85,6 @@ function IocComponent() {
         console.log('error.response.data', error.response.data);
         console.log('error.response.status', error.response.status);
         console.log('error.response.headers', error.response.headers);
-        setErrorMessage(error.response.data.error.message)
-        console.log(error.response.data.error.message)
-        setAlert(true)
       } else if (error.request) {
         /*
          * The request was made but no response was received, `error.request`
@@ -93,14 +97,41 @@ function IocComponent() {
         console.log('error.message', error.message);
       }
       console.log('error', error);
+
+      // si no existe en virus total, solo agregar a lo último 
+      let isSha256 = isSHA256(hash)
+      let isSha1 = isSHA1(hash)
+      let isMd5 = isMD5(hash)
+
+      const item: IiocItem = {
+        sha256: isSha256 && hash,
+        sha1: isSha1 && hash,
+        md5: isMd5 && hash,
+        mcAfee: '',
+        engines: `0 / 0`
+      }
+
+      setLocalStorage(item, true)
     }
     setIoc('')
     setButtonDisabled(false)
     setTextareaDisabled(false)
   }
 
+  // validar hash con regex
+  const validateHash = (hash: string): boolean => {
+    console.log(hash)
+    let isSha256 = isSHA256(hash)
+    let isSha1 = isSHA1(hash)
+    let isMd5 = isMD5(hash)
+    if (isSha256 || isSha1 || isMd5)
+      return true
+    else
+      return false
+  }
 
-  const setLocalStorage = (ioc: IiocItem) => {
+
+  const setLocalStorage = (ioc: IiocItem, setEnd?: boolean) => {
     const hasLocalStorage = localStorage.length > 0
     if (hasLocalStorage) {
       let iocItems: IiocItem[] = [];
@@ -108,8 +139,27 @@ function IocComponent() {
       if (typeof iocs === 'string') {
         iocItems = JSON.parse(iocs);
       }
-      const filterIocInIocItems = iocItems.filter(x => x.sha256 !== ioc.sha256 && x.md5 !== ioc.md5 && x.sha_1 !== ioc.sha_1)
-      filterIocInIocItems.unshift(ioc)
+      let filterIocInIocItems: IiocItem[] = []
+
+      if (setEnd) {
+
+        const hashInItemNotEmpty = ioc.sha256 ? ioc.sha256 : ioc.md5 ? ioc.md5 : ioc.sha1
+
+        filterIocInIocItems = iocItems.filter(x =>
+          x.sha256 !== hashInItemNotEmpty &&
+          x.md5 !== hashInItemNotEmpty &&
+          x.sha1 !== hashInItemNotEmpty)
+        filterIocInIocItems.push(ioc)
+      }
+      else {
+        filterIocInIocItems = iocItems.filter(x =>
+          x.sha256 !== ioc.sha256 &&
+          x.md5 !== ioc.md5 &&
+          x.sha1 !== ioc.sha1)
+
+        filterIocInIocItems.unshift(ioc)
+      }
+
       localStorage.setItem('iocs', JSON.stringify(filterIocInIocItems))
     }
     else {
@@ -118,6 +168,44 @@ function IocComponent() {
       localStorage.setItem('iocs', JSON.stringify(iocs))
     }
     refresh()
+  }
+
+
+  // read file
+  const readFile = () => {
+    iocsCsv.forEach(ioc => {
+      save(ioc)
+    })
+  }
+
+  const handleWindow = (e: any) => {
+    if (e.target.name === 'showFormIoc') {
+      setShowFormIoc(false)
+      setShowFormCsvIoc(true)
+    }
+    if (e.target.name === 'showFormCsvIoc') {
+      setShowFormCsvIoc(false)
+      setShowFormIoc(true)
+    }
+  }
+
+
+  const isSHA256 = (hash: string): boolean => {
+    const regexSHA256 = new RegExp('^[A-Fa-f0-9]{64}$')
+    let isSHA256 = regexSHA256.test(hash)
+    return isSHA256;
+  }
+
+  const isSHA1 = (hash: string): boolean => {
+    const regexSHA1 = new RegExp('^[a-fA-F0-9]{40}$')
+    let isSHA1 = regexSHA1.test(hash)
+    return isSHA1
+  }
+
+  const isMD5 = (hash: string): boolean => {
+    const regexMD5 = new RegExp('^[a-f0-9]{32}$')
+    let isMD5 = regexMD5.test(hash)
+    return isMD5
   }
 
   return (
@@ -138,20 +226,38 @@ function IocComponent() {
         </Modal.Footer>
       </Modal>
 
-      {/* Form */}
-      <Form className='container mt-5 mb-5'>
-        <Form.Group controlId="exampleForm.ControlTextarea1">
-          <h2 className='text-center mb-5'>Ingresar Indicador de Compromiso</h2>
-          <Form.Label>Formatos aceptados: <small><b>SHA256, MD5 & SHA-1</b></small></Form.Label>
-          <Form.Control style={{ fontSize: '30px' }} as="textarea" rows={2} value={ioc} size={'sm'} onChange={e => setIoc(e.target.value)} disabled={textareaDisabled} />
-        </Form.Group>
-        <div className='text-center'>
-          <Button className='mb-3' variant="success" onClick={() => save(ioc)} disabled={buttonDisabled || ioc === ''}>Consultar</Button>
-          {alert && <AlertDismissibleExample errorMessage={errorMessage} />}
+      {/* navbar intern one IOC or IOCs CVS */}
+      <div className='mt-5 mb-3 d-flex container'>
+        <div>
+          {showFormIoc && <Button name='showFormIoc' variant="link" onClick={handleWindow} >Ir a CSV archivo masivo</Button>}
+          {showFormCsvIoc && <Button name='showFormCsvIoc' variant="link" onClick={handleWindow} >Ir a IOC uno a uno</Button>}
         </div>
-      </Form>
+      </div>
 
-      {/* Datatable */}
+      {/* Form one IOC*/}
+      {showFormIoc && (
+        <Form className='container mt-2 mb-2'>
+          <Form.Group controlId="exampleForm.ControlTextarea1">
+            <h2 className='text-center mb-4'>Ingresar Indicador de Compromiso</h2>
+            <Form.Label>Consultar IOCs uno a uno</Form.Label> < br />
+            <Form.Label>Formatos aceptados: <small><b>SHA256, MD5 & SHA-1</b></small></Form.Label>
+            <Form.Control style={{ fontSize: '30px' }} as="textarea" rows={2} value={ioc} size={'sm'} onChange={e => setIoc(e.target.value)} disabled={textareaDisabled} />
+          </Form.Group>
+          <div className='text-center'>
+            <Button className='mb-3' variant="success" onClick={() => save(ioc)} disabled={buttonDisabled || ioc === ''}>Consultar</Button>
+          </div>
+        </Form>
+      )}
+
+      {/* Form two or more IOCs*/}
+      {showFormCsvIoc && (
+        <UploadExcelComponent
+          onFileSelectSuccess={(file: any) => setIocsCsv(file)}
+          readFile={readFile}
+        />
+      )}
+
+      {/* Data table */}
       <div className='mb-3 mr-3 d-flex justify-content-end'>
         <div>
           <Button variant="danger" onClick={handleShow} disabled={iocs.length === 0} >Limpiar</Button>
@@ -178,7 +284,7 @@ function IocComponent() {
                 <tr key={i}>
                   <td>{i + 1}</td>
                   <td>{el.sha256}</td>
-                  <td>{el.sha_1}</td>
+                  <td>{el.sha1}</td>
                   <td>{el.md5}</td>
                   <td>{el.mcAfee}</td>
                   <td>{el.engines}</td>

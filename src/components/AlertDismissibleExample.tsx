@@ -7,7 +7,7 @@ function AlertDismissibleExample({ errorMessage }: { errorMessage: string }) {
   if (show) {
     return (
       <Alert variant="danger" onClose={() => setShow(false)} dismissible>
-        <Alert.Heading>Oh noo! Tienes un error!</Alert.Heading>
+        <Alert.Heading>Oh noo! Tiene un error!</Alert.Heading>
         <p> {errorMessage} </p>
       </Alert>
     );
