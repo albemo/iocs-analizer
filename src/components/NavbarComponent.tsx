@@ -1,14 +1,16 @@
-import React from 'react'
+import React from 'react';
 import { Navbar } from 'react-bootstrap';
-import { RiVirusLine } from 'react-icons/ri'
+import { RiVirusLine } from 'react-icons/ri';
 
 function NavbarComponent() {
   return (
     <>
-      <Navbar bg="success" variant="dark" expand="lg">
+      <Navbar bg='success' variant='dark' expand='lg'>
         <RiVirusLine size={32} />
-        <Navbar.Brand className='ml-2' href="/">IOCs Analizer</Navbar.Brand>
-        <Navbar.Toggle aria-controls="basic-navbar-nav" />
+        <Navbar.Brand className='ml-2' href='/'>
+          IOCs Analizer
+        </Navbar.Brand>
+        <Navbar.Toggle aria-controls='basic-navbar-nav' />
         {/* <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="mr-auto">
             <Nav.Link href="/virus-total">Virus Total</Nav.Link>
@@ -17,7 +19,7 @@ function NavbarComponent() {
         </Navbar.Collapse> */}
       </Navbar>
     </>
-  )
+  );
 }
 
-export default NavbarComponent
+export default NavbarComponent;
