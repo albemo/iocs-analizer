@@ -35,7 +35,7 @@ function IocComponentP() {
   const refresh = async () => {
     let iocItems: IiocItem[] = [];
     try {
-      let data = await axios.get('https://localhost:5001/api/v1/iocs');
+      let data = await axios.get('http://localhost:5000/api/v1/iocs');
       iocItems = data.data;
       setIocs(iocItems);
     } catch (error) {
@@ -135,7 +135,7 @@ function IocComponentP() {
 
   const submit = async (item: IiocItem) => {
     let iocItems: IiocItem[] = [];
-    let iocs = await axios.get('https://localhost:5001/api/v1/iocs');
+    let iocs = await axios.get('http://localhost:5000/api/v1/iocs');
     iocItems = iocs.data;
     let isExist = iocItems.some(
       (i) =>
@@ -156,7 +156,7 @@ function IocComponentP() {
     }
 
     await axios
-      .post('https://localhost:5001/api/v1/iocs', item)
+      .post('http://localhost:5000/api/v1/iocs', item)
       .then((res) => console.log(res))
       .catch((err) => console.log(err));
 
