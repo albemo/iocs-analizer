@@ -3,6 +3,8 @@ import { Table, Form, Button, Modal } from 'react-bootstrap';
 import axios from 'axios';
 import ExportExcelComponent from '../excel/ExportExcelComponent';
 import UploadExcelComponent from '../excel/UploadExcelComponent';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 interface IiocItem {
   sha256: any;
@@ -12,7 +14,7 @@ interface IiocItem {
   engines: any;
 }
 
-function IocComponent() {
+function IocComponentP() {
   const [iocs, setIocs] = useState<IiocItem[]>([]);
   const [ioc, setIoc] = useState('');
   const [buttonDisabled, setButtonDisabled] = useState(false);
@@ -30,17 +32,19 @@ function IocComponent() {
     refresh();
   }, []);
 
-  const refresh = () => {
+  const refresh = async () => {
     let iocItems: IiocItem[] = [];
-    let iocss = localStorage.getItem('iocs');
-    if (typeof iocss === 'string') {
-      iocItems = JSON.parse(iocss);
+    try {
+      let data = await axios.get('https://localhost:5001/api/v1/iocs');
+      iocItems = data.data;
+      setIocs(iocItems);
+    } catch (error) {
+      console.log(error);
     }
-    setIocs(iocItems);
   };
 
   const handleClose = () => setShow(false);
-  const handleShow = () => setShow(true);
+  // const handleShow = () => setShow(true);
 
   const clearData = () => {
     handleClose();
@@ -62,8 +66,6 @@ function IocComponent() {
         }
       );
       // Success 🎉
-      console.log(fetchIoc);
-
       const item: IiocItem = {
         sha256: fetchIoc.data.data.attributes.sha256,
         sha1: fetchIoc.data.data.attributes.sha1,
@@ -78,7 +80,7 @@ function IocComponent() {
         }`,
       };
 
-      setLocalStorage(item);
+      await submit(item);
     } catch (error) {
       // Error 😨
       if (error.response) {
@@ -108,14 +110,14 @@ function IocComponent() {
       let isMd5 = isMD5(hash);
 
       const item: IiocItem = {
-        sha256: isSha256 && hash,
-        sha1: isSha1 && hash,
-        md5: isMd5 && hash,
+        sha256: isSha256 ? hash : '',
+        sha1: isSha1 ? hash : '',
+        md5: isMd5 ? hash : '',
         mcafee: '',
-        engines: `0 / 0`,
+        engines: '0 / 0',
       };
 
-      setLocalStorage(item, true);
+      await submit(item);
     }
     setIoc('');
     setButtonDisabled(false);
@@ -124,7 +126,6 @@ function IocComponent() {
 
   // validar hash con regex
   const validateHash = (hash: string): boolean => {
-    console.log(hash);
     let isSha256 = isSHA256(hash);
     let isSha1 = isSHA1(hash);
     let isMd5 = isMD5(hash);
@@ -132,45 +133,33 @@ function IocComponent() {
     else return false;
   };
 
-  const setLocalStorage = (ioc: IiocItem, setEnd?: boolean) => {
-    const hasLocalStorage = localStorage.length > 0;
-    if (hasLocalStorage) {
-      let iocItems: IiocItem[] = [];
-      let iocs = localStorage.getItem('iocs');
-      if (typeof iocs === 'string') {
-        iocItems = JSON.parse(iocs);
-      }
-      let filterIocInIocItems: IiocItem[] = [];
+  const submit = async (item: IiocItem) => {
+    let iocItems: IiocItem[] = [];
+    let iocs = await axios.get('https://localhost:5001/api/v1/iocs');
+    iocItems = iocs.data;
+    let isExist = iocItems.some(
+      (i) =>
+        i.sha256 === item.sha256 && i.sha1 === item.sha1 && i.md5 === item.md5
+    );
 
-      if (setEnd) {
-        const hashInItemNotEmpty = ioc.sha256
-          ? ioc.sha256
-          : ioc.md5
-          ? ioc.md5
-          : ioc.sha1;
-
-        filterIocInIocItems = iocItems.filter(
-          (x) =>
-            x.sha256 !== hashInItemNotEmpty &&
-            x.md5 !== hashInItemNotEmpty &&
-            x.sha1 !== hashInItemNotEmpty
-        );
-        filterIocInIocItems.push(ioc);
-      } else {
-        filterIocInIocItems = iocItems.filter(
-          (x) =>
-            x.sha256 !== ioc.sha256 && x.md5 !== ioc.md5 && x.sha1 !== ioc.sha1
-        );
-
-        filterIocInIocItems.unshift(ioc);
-      }
-
-      localStorage.setItem('iocs', JSON.stringify(filterIocInIocItems));
-    } else {
-      let iocs: IiocItem[] = [];
-      iocs.unshift(ioc);
-      localStorage.setItem('iocs', JSON.stringify(iocs));
+    if (isExist) {
+      toast.info(`🤔 Ya existe el Ioc! ${ioc} `, {
+        position: 'top-right',
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
+      return;
     }
+
+    await axios
+      .post('https://localhost:5001/api/v1/iocs', item)
+      .then((res) => console.log(res))
+      .catch((err) => console.log(err));
+
     refresh();
   };
 
@@ -212,6 +201,20 @@ function IocComponent() {
 
   return (
     <>
+      <ToastContainer
+        position='top-right'
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
+      {/* Same as */}
+      <ToastContainer />
+
       {/* Modal */}
       <Modal show={show} onHide={handleClose}>
         <Modal.Header closeButton>
@@ -292,13 +295,13 @@ function IocComponent() {
       {/* Data table */}
       <div className='mb-3 mr-3 d-flex justify-content-end'>
         <div>
-          <Button
-            variant='danger'
+          {/* <Button
+            variant="danger"
             onClick={handleShow}
             disabled={iocs.length === 0}
           >
             Limpiar
-          </Button>
+          </Button> */}
         </div>
         <div
           className='ml-3'
@@ -342,4 +345,4 @@ function IocComponent() {
   );
 }
 
-export default IocComponent;
+export default IocComponentP;

@@ -3,7 +3,7 @@ import NavbarComponent from './components/NavbarComponent';
 // import IocComponent from './components/ioc/IocComponent';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
-import IocComponentP from './components/ioc/IocComponentP';
+import IocComponentP from './components/ioc/IocComponent';
 
 function App() {
   return (
