@@ -14,7 +14,7 @@ interface IiocItem {
   engines: any;
 }
 
-function IocComponentP() {
+function IocComponent() {
   const [iocs, setIocs] = useState<IiocItem[]>([]);
   const [ioc, setIoc] = useState('');
   const [buttonDisabled, setButtonDisabled] = useState(false);
@@ -254,7 +254,7 @@ function IocComponentP() {
             <h2 className='text-center mb-4'>
               Ingresar Indicador de Compromiso
             </h2>
-            <Form.Label>Consultar IOCs uno a uno</Form.Label> <br />
+            <Form.Label>Consultar IOCs uno a uno en Virus Total</Form.Label> <br />
             <Form.Label>
               Formatos aceptados:{' '}
               <small>
@@ -345,4 +345,4 @@ function IocComponentP() {
   );
 }
 
-export default IocComponentP;
+export default IocComponent;
