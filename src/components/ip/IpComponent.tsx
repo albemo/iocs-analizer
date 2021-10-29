@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Form, Button, Modal } from 'react-bootstrap';
 import axios from 'axios';
-import ExportExcelComponent from '../excel/ExportExcelComponent';
-import UploadExcelComponent from '../excel/UploadExcelComponent';
+// import ExportExcelComponent from '../excel/ExportExcelComponent';
+// import UploadExcelComponent from '../excel/UploadExcelComponent';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ProgressBar from 'react-bootstrap/ProgressBar';
 
-interface IipItem {
+interface IipItemAbuseIp {
   abuseConfidenceScore: any;
   domain: any;
   ipAddress: any;
@@ -15,18 +15,34 @@ interface IipItem {
   lastReportedAt: any;
   totalReports: any;
 }
+interface IipItemVirusTotal {
+  reports: any;
+  totalReports: any;
+  ipAddress: any;
+  malicious: any[];
+  // isp: any;
+  // lastReportedAt: any;
+}
 
 function IpComponent() {
-  const [ips, setIps] = useState<IipItem[]>([]);
+  const [ipsAbuseIp, setIpsAbuseIp] = useState<IipItemAbuseIp[]>([]);
+  const [ipsVirusTotal, setIpsVirusTotal] = useState<IipItemVirusTotal[]>([]);
   const [ip, setIp] = useState('');
+
+
   const [buttonDisabled, setButtonDisabled] = useState(false);
   const [textareaDisabled, setTextareaDisabled] = useState(false);
   const [show, setShow] = useState(false);
 
+
+  const proxyurl = 'https://cors-anywhere.herokuapp.com/';
+  const keyAbuseIpDb = '673b76fb36714c2a41a73b11d30d91b2db2ea4d330e02aa7618a4ceff23e301e30afb0f8ddbb7d45';
+  // const keyIbmXForce = '1d5e46f3-c66e-40e5-b88a-f69d7233f513'
+
   // csv
   // const [iocsCsv, setIocsCsv] = useState([]);
   // show component for only one IOC
-  const [showFormIp, setShowFormIp] = useState(true);
+  // const [showFormIp, setShowFormIp] = useState(true);
   // show component for only CSV IOC
   // const [showFormCsvIp, setShowFormCsvIp] = useState(false);
 
@@ -38,9 +54,8 @@ function IpComponent() {
     // let ipItems: IipItem[] = [];
     try {
       // setIps(ipItems);
-      console.log('entra', ips)
-      // if(localStorage.length <= 0)
-      localStorage.setItem("ips", JSON.stringify(ips));
+      localStorage.setItem("ipsAbuseIp", JSON.stringify(ipsAbuseIp));
+      localStorage.setItem("ipsVirusTotal", JSON.stringify(ipsVirusTotal));
 
     } catch (error) {
       console.log(error);
@@ -56,49 +71,79 @@ function IpComponent() {
     // refresh();
   };
 
-  // let ipItems: IipItem[] = [];
   const save = async (ip: string) => {
     const isValidIp = validateIp(ip);
     if (!isValidIp) return;
     setButtonDisabled(true);
     setTextareaDisabled(true);
+
     try {
-      const proxyurl = 'https://cors-anywhere.herokuapp.com/';
-      const fetchIp = await axios(
+      const fetchIpAbuseIp = await axios(
         `${proxyurl}https://api.abuseipdb.com/api/v2/check`,
         {
           // headers: { 'Key': `${process.env.REACT_APP_API_KEY_ABUSEIP}` },
-          headers: { 'Key': `673b76fb36714c2a41a73b11d30d91b2db2ea4d330e02aa7618a4ceff23e301e30afb0f8ddbb7d45` },
+          headers: { 'Key': `${keyAbuseIpDb}` },
           params: {
             'ipAddress': `${ip}`,
             // 'ipAddress': `36.91.140.95`,
-            // 'ipAddress': `118.25.6.39`,
-            // 'maxAgeInDays': `90`
           }
         }
       );
-      console.log('asdfadfas', fetchIp.data.data)
 
+      console.log('fetchIpAbuseIp', fetchIpAbuseIp.data.data)
 
       // Success 🎉
-      const item: IipItem = {
-        abuseConfidenceScore: fetchIp.data.data.abuseConfidenceScore,
-        domain: fetchIp.data.data.domain,
-        ipAddress: fetchIp.data.data.ipAddress,
-        isp: fetchIp.data.data.isp,
-        lastReportedAt: fetchIp.data.data.lastReportedAt,
-        totalReports: fetchIp.data.data.totalReports
+      const item: IipItemAbuseIp = {
+        abuseConfidenceScore: fetchIpAbuseIp.data.data.abuseConfidenceScore,
+        domain: fetchIpAbuseIp.data.data.domain,
+        ipAddress: fetchIpAbuseIp.data.data.ipAddress,
+        isp: fetchIpAbuseIp.data.data.isp,
+        lastReportedAt: fetchIpAbuseIp.data.data.lastReportedAt,
+        totalReports: fetchIpAbuseIp.data.data.totalReports
       };
 
-      item.lastReportedAt = Date.parse(fetchIp.data.data.lastReportedAt)
+      item.lastReportedAt = item.lastReportedAt !== null
+        ? Date.parse(fetchIpAbuseIp.data.data.lastReportedAt)
+        : item.lastReportedAt
 
-      await submit(item);
+      await submitAbuseIp(item);
 
       // await submit(item);
     } catch (error) {
       // Error 😨
       // console.log('error', error);
     }
+
+    try {
+      let fetchIPVirusTotal = await axios(
+        `https://www.virustotal.com/api/v3/ip_addresses/${ip}`,
+        {
+          headers: { 'x-apiKey': `${process.env.REACT_APP_API_KEY}` },
+        }
+      );
+
+      console.log('fetchIPVirusTotal', fetchIPVirusTotal.data)
+
+      let data = fetchIPVirusTotal.data.data
+      let data2 = Object.values(data.attributes.last_analysis_results)
+      let lastAnalysisStats = data.attributes.last_analysis_stats
+      let malicious = data2.filter((x: any) => x.category == 'malicious');
+
+      const item: IipItemVirusTotal = {
+        reports: lastAnalysisStats.malicious,
+        totalReports: data2.length,
+        ipAddress: data.id,
+        malicious
+      };
+
+      console.log("-----------item------------", item)
+
+      await submitVirusTotalIp(item);
+    } catch (error) {
+
+    }
+
+
     setIp('');
     setButtonDisabled(false);
     setTextareaDisabled(false);
@@ -111,9 +156,9 @@ function IpComponent() {
     else return false;
   };
 
-  const submit = async (item: IipItem) => {
-    let iocItems: IipItem[] = [];
-    let iocs: any = JSON.parse(localStorage.getItem("ips") || '{}'); // await axios.get('http://localhost:3000/api/v1/iocs');
+  const submitAbuseIp = async (item: IipItemAbuseIp) => {
+    let iocItems: IipItemAbuseIp[] = [];
+    let iocs: any = JSON.parse(localStorage.getItem("ipsAbuseIp") || '{}'); // await axios.get('http://localhost:3000/api/v1/iocs');
     iocItems = iocs;
     let isExist = iocItems.some(
       (i) =>
@@ -133,11 +178,43 @@ function IpComponent() {
       return;
     }
 
+    ipsAbuseIp.unshift(item)
 
+    setIpsAbuseIp(ipsAbuseIp);
 
-    ips.unshift(item)
+    await axios
+    // .post('http://localhost:3000/api/v1/iocs', item)
+    // .then((res) => console.log(res))
+    // .catch((err) => console.log(err));
 
-    setIps(ips);
+    refresh();
+  };
+
+  const submitVirusTotalIp = async (item: IipItemVirusTotal) => {
+    let iocItems: IipItemVirusTotal[] = [];
+    let iocs: any = JSON.parse(localStorage.getItem("ipsVirusTotal") || '{}'); // await axios.get('http://localhost:3000/api/v1/iocs');
+    iocItems = iocs;
+    let isExist = iocItems.some(
+      (i) =>
+        i.ipAddress === item.ipAddress
+    );
+
+    if (isExist) {
+      toast.info(`🤔 Ya existe la IP! ${ip} `, {
+        position: 'top-right',
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
+      return;
+    }
+
+    ipsVirusTotal.unshift(item)
+
+    setIpsVirusTotal(ipsVirusTotal);
 
     await axios
     // .post('http://localhost:3000/api/v1/iocs', item)
@@ -238,7 +315,7 @@ function IpComponent() {
           <h2 className='text-center mb-4'>
             Ingresar IP
           </h2>
-          <Form.Label>Consultar IPs una a una en AbuseIPDB</Form.Label> <br />
+          {/* <Form.Label>Consultar IPs una a una en AbuseIPDB</Form.Label> <br /> */}
           <Form.Label>
             Formatos aceptados:{' '}
             <small>
@@ -290,7 +367,7 @@ function IpComponent() {
         <div
           className='ml-3'
           style={
-            ips.length === 0 ? { pointerEvents: 'none', opacity: '0.4' } : {}
+            ipsAbuseIp.length === 0 ? { pointerEvents: 'none', opacity: '0.4' } : {}
           }
         >
           {/* <ExportExcelComponent ips={ips} /> */}
@@ -300,22 +377,27 @@ function IpComponent() {
         className='container-fluid table-responsive'
         style={{ fontSize: '14px' }}
       >
+
+        {/* ------------------- AbuseIp-------------- */}
+
+        <h2 className='text-left mb-4'><img src='/lib/abuseipdb-logo.svg' style={{height: '40px'}} />AbuseIPDB</h2>
         <Table striped bordered hover size='sm'>
           <thead>
             <tr>
               <th>#</th>
+              <th>IpAddress</th>
               <th>AbuseConfidenceScore</th>
               <th>Domain</th>
-              <th>IpAddress</th>
               <th>Isp</th>
               <th>LastReportedAt</th>
               <th>TotalReports</th>
             </tr>
           </thead>
           <tbody>
-            {ips.map((el, i) => (
+            {ipsAbuseIp.map((el, i) => (
               <tr key={i}>
                 <td>{i + 1}</td>
+                <td>{el.ipAddress}</td>
                 <td><ProgressBar
                   animated
                   variant="warning"
@@ -323,17 +405,72 @@ function IpComponent() {
                   now={el.abuseConfidenceScore}
                 /></td>
                 <td>{el.domain}</td>
-                <td>{el.ipAddress}</td>
                 <td>{el.isp}</td>
                 <td>
-                  {new Intl.DateTimeFormat("es-CO", {
-                    year: "numeric",
-                    month: "long",
-                    day: "2-digit"
-                  }).format(el.lastReportedAt)}
+                  {
+                    el.lastReportedAt !== null ?
+                      new Intl.DateTimeFormat("es-CO", {
+                        year: "numeric",
+                        month: "long",
+                        day: "2-digit"
+                      }).format(el.lastReportedAt) :
+                      el.lastReportedAt
+                  }
 
                 </td>
                 <td>{el.totalReports}</td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+
+
+        <h2 className='mb-4'></h2>
+        {/* ------------------- Virus Total-------------- */}
+        <h2 className='text-left mb-4'><img src='/lib/vt_logo.svg' style={{height: '30px'}} />Virus Total</h2>
+        <Table striped bordered hover size='sm'>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>IpAddress</th>
+              <th>Security Vendors Flagged this <br /> IP Address as Malicious</th>
+              <th>Engine Name</th>
+              <th>Category</th>
+              {/* <th>LastReportedAt</th>
+              <th>TotalReports</th> */}
+            </tr>
+          </thead>
+          <tbody>
+            {ipsVirusTotal.map((el, i) => (
+              <tr key={i}>
+                <td>{i + 1}</td>
+                <td>{el.ipAddress}</td>
+                <td>{el.reports}/{el.totalReports}
+                </td>
+                <td>
+                  <Table>
+                    <tbody>
+                      {el.malicious.map((e, l) => (
+                        <tr key={l}>
+                          <td>{e.engine_name}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                </td>
+                <td>
+                  <Table>
+                    <tbody>
+                      {el.malicious.map((e, l) => (
+                        <tr key={l}>
+                          <td>{e.category}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                </td>
+                {/* <td></td>
+                <td>{el.totalReports}</td> */}
               </tr>
             ))}
           </tbody>
@@ -344,3 +481,20 @@ function IpComponent() {
 }
 
 export default IpComponent;
+
+
+
+      // var user = 'a3636ba7-6203-4677-a5de-49d380591639';
+      // var pass = 'db959be4-3e39-423e-8825-7cc52c58f6ab';
+
+      // var auth = Buffer.from(`${user}:${pass}`).toString('base64')
+      // console.log("asdafsdasfdsadfafds", auth)
+      // const fetchIpIbmXForce = await axios(
+      //   `https://exchange.xforce.ibmcloud.com/api/ipr/${ip}`,
+      //   {
+      //     headers: {
+      //       'Authorization': 'Basic ' + 'MWE2Y2VlZmEtNDVkNC00ZDQ1LTllYmMtNGVhZWQzZjU2OTIxOjNhYmNlMTMzLTdlOTAtNGE4NS1hZWJkLWM4MTA5NDQ2MTk0OA=='
+      //     }
+      //   }
+      // );
+      // console.log('fetchIpIbmXForce', fetchIpIbmXForce)
