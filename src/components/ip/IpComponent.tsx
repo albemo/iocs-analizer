@@ -23,10 +23,25 @@ interface IipItemVirusTotal {
   // isp: any;
   // lastReportedAt: any;
 }
+interface IipItemAlienvault {
+  ipAddress: any;
+  asn: any;
+  countryName: any;
+  pulseInfoCount: any;
+  pulseInfoList: any[];
+}
+interface IPulseInfo {
+  count: number;
+  tags: any[];
+  name: any;
+  description: any;
+  author: any;
+}
 
 function IpComponent() {
   const [ipsAbuseIp, setIpsAbuseIp] = useState<IipItemAbuseIp[]>([]);
   const [ipsVirusTotal, setIpsVirusTotal] = useState<IipItemVirusTotal[]>([]);
+  const [ipsAlienvault, setIpsAlienvault] = useState<IipItemAlienvault[]>([]);
   const [ip, setIp] = useState('');
 
 
@@ -56,6 +71,7 @@ function IpComponent() {
       // setIps(ipItems);
       localStorage.setItem("ipsAbuseIp", JSON.stringify(ipsAbuseIp));
       localStorage.setItem("ipsVirusTotal", JSON.stringify(ipsVirusTotal));
+      localStorage.setItem("ipsAlienvault", JSON.stringify(ipsAlienvault));
 
     } catch (error) {
       console.log(error);
@@ -77,6 +93,12 @@ function IpComponent() {
     setButtonDisabled(true);
     setTextareaDisabled(true);
 
+
+
+
+
+
+
     try {
       const fetchIpAbuseIp = await axios(
         `${proxyurl}https://api.abuseipdb.com/api/v2/check`,
@@ -90,7 +112,7 @@ function IpComponent() {
         }
       );
 
-      console.log('fetchIpAbuseIp', fetchIpAbuseIp.data.data)
+      // console.log('fetchIpAbuseIp', fetchIpAbuseIp.data.data)
 
       // Success 🎉
       const item: IipItemAbuseIp = {
@@ -111,8 +133,20 @@ function IpComponent() {
       // await submit(item);
     } catch (error) {
       // Error 😨
-      // console.log('error', error);
+      console.log('error', error);
     }
+
+
+
+
+
+
+
+
+
+
+
+
 
     try {
       let fetchIPVirusTotal = await axios(
@@ -122,12 +156,12 @@ function IpComponent() {
         }
       );
 
-      console.log('fetchIPVirusTotal', fetchIPVirusTotal.data)
+      // console.log('fetchIPVirusTotal', fetchIPVirusTotal.data)
 
       let data = fetchIPVirusTotal.data.data
       let data2 = Object.values(data.attributes.last_analysis_results)
       let lastAnalysisStats = data.attributes.last_analysis_stats
-      let malicious = data2.filter((x: any) => x.category == 'malicious');
+      let malicious = data2.filter((x: any) => x.category === 'malicious');
 
       const item: IipItemVirusTotal = {
         reports: lastAnalysisStats.malicious,
@@ -136,12 +170,55 @@ function IpComponent() {
         malicious
       };
 
-      console.log("-----------item------------", item)
-
       await submitVirusTotalIp(item);
     } catch (error) {
-
+      // Error 😨
+      console.log('error', error);
     }
+
+
+
+
+
+
+
+
+
+    try {
+      let section = 'general';
+      let fetchIPalienvault = await axios(
+        `https://otx.alienvault.com/api/v1/indicators/IPv4/${ip}/${section}`,
+        // {
+        //   headers: { 'OTX-Key': `c139efd0a176ed62add569d1fe377b61285a47a1c9541e973f6468a4079c6a51` },
+        // }
+      );
+
+      let data = fetchIPalienvault.data
+      let data2 = Object.values(data.pulse_info)
+
+      console.log("-----------fetchIPalienvault------------", data)
+
+      const item: IipItemAlienvault = {
+        ipAddress: data.indicator,
+        asn: data.asn,
+        countryName: data.country_name,
+        pulseInfoCount: data2[0],
+        pulseInfoList: data2[1] as any[]
+      };
+
+      await submitAlienVaultIp(item);
+    } catch (error) {
+      // Error 😨
+      console.log('error', error);
+    }
+
+
+
+
+
+
+
+
 
 
     setIp('');
@@ -157,16 +234,16 @@ function IpComponent() {
   };
 
   const submitAbuseIp = async (item: IipItemAbuseIp) => {
-    let iocItems: IipItemAbuseIp[] = [];
-    let iocs: any = JSON.parse(localStorage.getItem("ipsAbuseIp") || '{}'); // await axios.get('http://localhost:3000/api/v1/iocs');
-    iocItems = iocs;
-    let isExist = iocItems.some(
+    let ipItems: IipItemAbuseIp[] = [];
+    let ips: any = JSON.parse(localStorage.getItem("ipsAbuseIp") || '{}'); // await axios.get('http://localhost:3000/api/v1/iocs');
+    ipItems = ips;
+    let isExist = ipItems.some(
       (i) =>
         i.ipAddress === item.ipAddress
     );
 
     if (isExist) {
-      toast.info(`🤔 Ya existe la IP! ${ip} `, {
+      toast.info(`🤔 Ya existe la IP! ${ip} en AbuseIp`, {
         position: 'top-right',
         autoClose: 5000,
         hideProgressBar: false,
@@ -191,16 +268,16 @@ function IpComponent() {
   };
 
   const submitVirusTotalIp = async (item: IipItemVirusTotal) => {
-    let iocItems: IipItemVirusTotal[] = [];
-    let iocs: any = JSON.parse(localStorage.getItem("ipsVirusTotal") || '{}'); // await axios.get('http://localhost:3000/api/v1/iocs');
-    iocItems = iocs;
-    let isExist = iocItems.some(
+    let ipItems: IipItemVirusTotal[] = [];
+    let ips: any = JSON.parse(localStorage.getItem("ipsVirusTotal") || '{}'); // await axios.get('http://localhost:3000/api/v1/iocs');
+    ipItems = ips;
+    let isExist = ipItems.some(
       (i) =>
         i.ipAddress === item.ipAddress
     );
 
     if (isExist) {
-      toast.info(`🤔 Ya existe la IP! ${ip} `, {
+      toast.info(`🤔 Ya existe la IP! ${ip} en VirusTotal`, {
         position: 'top-right',
         autoClose: 5000,
         hideProgressBar: false,
@@ -215,6 +292,40 @@ function IpComponent() {
     ipsVirusTotal.unshift(item)
 
     setIpsVirusTotal(ipsVirusTotal);
+
+    await axios
+    // .post('http://localhost:3000/api/v1/iocs', item)
+    // .then((res) => console.log(res))
+    // .catch((err) => console.log(err));
+
+    refresh();
+  };
+
+  const submitAlienVaultIp = async (item: IipItemAlienvault) => {
+    let ipItems: IipItemAlienvault[] = [];
+    let ips: any = JSON.parse(localStorage.getItem("ipsAlienvault") || '{}'); // await axios.get('http://localhost:3000/api/v1/iocs');
+    ipItems = ips;
+    let isExist = ipItems.some(
+      (i) =>
+        i.ipAddress === item.ipAddress
+    );
+
+    if (isExist) {
+      toast.info(`🤔 Ya existe la IP! ${ip} en AlienVault`, {
+        position: 'top-right',
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
+      return;
+    }
+
+    ipsAlienvault.unshift(item)
+
+    setIpsAlienvault(ipsAlienvault);
 
     await axios
     // .post('http://localhost:3000/api/v1/iocs', item)
@@ -380,7 +491,7 @@ function IpComponent() {
 
         {/* ------------------- AbuseIp-------------- */}
 
-        <h2 className='text-left mb-4'><img src='/lib/abuseipdb-logo.svg' style={{height: '40px'}} />AbuseIPDB</h2>
+        <h2 className='text-left mt-4'><img alt="AbuseIp Img" src='/lib/abuseipdb-logo.svg' style={{ height: '40px' }} />AbuseIPDB</h2>
         <Table striped bordered hover size='sm'>
           <thead>
             <tr>
@@ -425,9 +536,8 @@ function IpComponent() {
         </Table>
 
 
-        <h2 className='mb-4'></h2>
         {/* ------------------- Virus Total-------------- */}
-        <h2 className='text-left mb-4'><img src='/lib/vt_logo.svg' style={{height: '30px'}} />Virus Total</h2>
+        <h2 className='text-left mt-4'><img alt="VirusTotal Img" src='/lib/vt_logo.svg' style={{ height: '30px' }} />Virus Total</h2>
         <Table striped bordered hover size='sm'>
           <thead>
             <tr>
@@ -475,6 +585,60 @@ function IpComponent() {
             ))}
           </tbody>
         </Table>
+
+
+        {/* ------------------- Alien Vault-------------- */}
+        <h2 className='text-left mt-4'><img alt="Alien Vault OTX Img" src='/lib/OTX-logo-white.svg' style={{ height: '30px' }} />Alien Vault OTX</h2>
+        <Table striped bordered hover size='sm'>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>IpAddress</th>
+              <th>Country Name</th>
+              <th>Asn</th>
+              {/* <th>PulseInfo Count</th> */}
+              <th>Pulse Info</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ipsAlienvault.map((el, i) => (
+              <tr key={i}>
+                <td>{i + 1}</td>
+                <td>{el.ipAddress}</td>
+                <td>{el.countryName}</td>
+                <td>{el.asn}</td>
+                <td>
+                  <h6>Showing <span className="text-primary">{el.pulseInfoCount > 3 ? 3 : el.pulseInfoCount}</span> of <span className="text-danger">{el.pulseInfoCount}</span> pulses</h6>
+                  {el.pulseInfoCount > 3 &&
+                    <Table>
+                      <thead>
+                        <tr>
+                          <th>Author</th>
+                          <th>Name</th>
+                          <th>Description</th>
+                          <th>Tags</th>
+                        </tr>
+                      </thead>
+                      {el.pulseInfoList.slice(0, 3).map((e, l) => (
+                        <tbody key={l}>
+                          <tr>
+                            <td>{e.author.username}</td>
+                            <td>{e.name}</td>
+                            <td>{e.description}</td>
+                            <td>{Array.from(e.tags).join(", ")}</td>
+                          </tr>
+                        </tbody>
+                      ))}
+                    </Table>
+
+                  }
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+
+
       </div>
     </>
   );
