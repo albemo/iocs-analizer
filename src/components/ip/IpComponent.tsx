@@ -491,7 +491,7 @@ function IpComponent() {
 
         {/* ------------------- AbuseIp-------------- */}
 
-        <h2 className='text-left mt-4'><img alt="AbuseIp Img" src='/lib/abuseipdb-logo.svg' style={{ height: '40px' }} />AbuseIPDB</h2>
+        <h2 className='text-left mt-4'><img alt="" src='/lib/abuseipdb-logo.svg' style={{ height: '40px' }} />AbuseIPDB</h2>
         <Table striped bordered hover size='sm'>
           <thead>
             <tr>
@@ -537,7 +537,7 @@ function IpComponent() {
 
 
         {/* ------------------- Virus Total-------------- */}
-        <h2 className='text-left mt-4'><img alt="VirusTotal Img" src='/lib/vt_logo.svg' style={{ height: '30px' }} />Virus Total</h2>
+        <h2 className='text-left mt-4'><img alt="" src='/lib/vt_logo.svg' style={{ height: '30px' }} />Virus Total</h2>
         <Table striped bordered hover size='sm'>
           <thead>
             <tr>
@@ -588,7 +588,7 @@ function IpComponent() {
 
 
         {/* ------------------- Alien Vault-------------- */}
-        <h2 className='text-left mt-4'><img alt="Alien Vault OTX Img" src='/lib/OTX-logo-white.svg' style={{ height: '30px' }} />Alien Vault OTX</h2>
+        <h2 className='text-left mt-4'><img alt="" src='/lib/OTX-logo-white.svg' style={{ height: '30px' }} />Alien Vault OTX</h2>
         <Table striped bordered hover size='sm'>
           <thead>
             <tr>
